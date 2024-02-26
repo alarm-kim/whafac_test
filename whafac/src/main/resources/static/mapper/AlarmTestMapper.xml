@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+                        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+                   
+<mapper namespace="com.whafac.mapper.test.AlarmTestMapper">
+	<select id="getEstimate" parameterType="Long" resultType="Map">
+		select
+			    est_idx,
+			    memberkey,
+			    estkey,
+			    est_stats,
+			    erskey,
+			    ers_cnt,
+			    regdate,
+			    bcate,
+			    scate,
+			    pdt_style,
+			    pdt_size,
+			    pdt_paper,
+			    pdt_print,
+			    pdt_afterwork,
+			    pdt_design,
+			    pdt_getdate,
+			    pdt_transtype,
+			    pdt_getmethod,
+			    pdt_getarea,
+			    pdt_etcmemo,
+			    pdt_cnt
+		  from whafac.whafac_estimate 
+		  where est_idx = #{id}
+	</select>
+
+
+   <insert id="saveEstimate" parameterType="Map">
+		INSERT INTO whafac.whafac_estimate
+		(
+		    memberkey,
+		    estkey,
+		    est_stats,
+		    erskey,
+		    ers_cnt,
+		    regdate,
+		    bcate,
+		    scate,
+		    pdt_style,
+		    pdt_size,
+		    pdt_paper,
+		    pdt_print,
+		    pdt_afterwork,
+		    pdt_design,
+		    pdt_getdate,
+		    pdt_transtype,
+		    pdt_getmethod,
+		    pdt_getarea,
+		    pdt_etcmemo,
+		    pdt_cnt
+		)
+		VALUES
+		(
+		    #{memberkey},
+		    #{estkey},
+		    #{est_stats},
+		    #{erskey},
+		    #{ers_cnt},
+		    #{regdate},
+		    #{bcate},
+		    #{scate},
+		    #{pdt_style},
+		    #{pdt_size},
+		    #{pdt_paper},
+		    #{pdt_print},
+		    #{pdt_afterwork},
+		    #{pdt_design},
+		    #{pdt_getdate},
+		    #{pdt_transtype},
+		    #{pdt_getmethod},
+		    #{pdt_getarea},
+		    #{pdt_etcmemo},
+		    #{pdt_cnt}
+		)
+    </insert>
+</mapper>

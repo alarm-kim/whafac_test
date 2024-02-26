@@ -1,0 +1,478 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+	
+	<head>
+		<script src="/js/comm/jquery-3.6.0.min.js"></script>
+		<script src="/js/comm/lodash.min.js"></script>
+		<script src="/js/order/prod_list.js"></script>
+		<script src="/js/order/order_util.js"></script>
+		<script src="/js/order/after_class.js"></script>
+		
+		<script type="text/javascript">
+			
+			// change 이벤트 등록
+			$(document).on('change', '', function(){});
+			document.addEventListener('change', (e) => {
+				// 용지선택 change 이벤트 처리
+				if( e.target.name === 'cover_cate' ){				
+					let vIndex = $("#cover_cate option:selected").attr('data-index');
+					
+					let cover_names = getCoverNames();
+					$('#cover_names').html(cover_names[vIndex]);
+				}				
+			    procChange();
+			});
+			
+			// 온로드 처리
+			function onload_init(){				
+				
+				$('#paper_lists').html(getPaperLists());
+				
+				$('#cover_cates').html(getCoverCates());
+				
+				let cover_names = getCoverNames();
+				$('#cover_names').html(cover_names[0]);
+				
+				procChange();
+			}
+			
+			// 주문 스펙
+			function getOrderSpec(){
+
+				let selPaperSize = $("#paper_size option:selected");
+				
+				let selValText  = selPaperSize.text();
+				let vCutSize    = selPaperSize.attr('data-cutsize');
+				let vJobSize    = selPaperSize.attr('data-jobsize');
+				
+				let tmpCutSize = vCutSize.split('x');
+				let tmpJobSize    = vJobSize.split('x');
+				let selQuantity = $("#quantity").val();				
+				let selCountCase = $("#count_case").val();
+				
+				let selCoverCate =  $("#cover_cate").val();
+				let selCoverName =  $("#cover_name").val();
+				
+				let selColor = $('input[name=cover_color]:checked');
+				let selCoverColor = selColor.val();
+				
+				let selCoverAddColor = $("#cover_add_color option:selected");
+				
+				let selCoverGram = $("#cover_gram option:selected");
+				
+				const $order_spec = {
+					'paper_val'  : selPaperSize.val(),
+				    'width'      : Number(tmpJobSize[0]),
+				    'height'     : Number(tmpJobSize[1]),
+				    'quantity'   : Number(selQuantity),
+				    'count_case' : Number(selCountCase),
+				    'sel_papaer' : selValText,
+				    'cut_size_w' : tmpCutSize[0] , 
+				    'cut_size_h' : tmpCutSize[1] , 
+				    'cover_color': selCoverColor ,
+				    'cover_cate' : selCoverCate,
+				    'cover_name' : selCoverName,
+				    'cover_color_data_idx' :  selColor.attr('data-val') ,
+				    'cover_color_val' : selColor.attr('color-val'),
+				    'cover_add_color': selCoverAddColor.val(),
+				    'cover_add_color_val' :selCoverAddColor.attr('data-val'),
+				    'cover_gram' : selCoverGram.text() ,
+				};
+				//console.log( $order_spec );
+				
+				return $order_spec;
+			}
+			
+			// change 이벤트 처리
+			function procChange(){
+				
+			    const $order_spec = getOrderSpec();
+				
+				$('#esti_paper_size').text( $order_spec.sel_papaer );
+				$('#esti_cover_name').text( $order_spec.cover_cate + "  "+ $order_spec.cover_name + " " +  $order_spec.cover_gram );
+				$('#esti_cover_color').text( $order_spec.cover_color );
+				$('#esti_quantity').text( $order_spec.quantity + '매 ' + $order_spec.count_case + '건' );
+				
+				// 제품사이즈
+				$('#cutsize-w').val($order_spec.cut_size_w);
+				$('#cutsize-h').val($order_spec.cut_size_h);
+			
+				// 편집사이즈
+				$('#jobsize-w').val( $order_spec.width + 4);
+			    $('#jobsize-h').val( $order_spec.height + 4);				
+				
+				// 종이 가격
+				let paper_price = fn_calc_paper( $order_spec );
+				
+				// 인쇄 비용
+				let print_price = fn_calc_print( $order_spec );
+				
+				// 후가공가격
+				let after_price = getAfterPrice( $order_spec );
+				
+				// 공급가격
+				let supply =  paper_price + print_price + after_price ;
+				const supply_price = Math.trunc( supply / 100) * 100;
+
+				// 부가세
+				const vat = Math.trunc( supply_price / 10 );
+				$('#fp-supply').text( formatComma(supply_price) );
+				$('#fp-vat').text(  formatComma(vat) );
+				
+				// 합계
+				$('#fp-total').text(  formatComma(supply_price + vat ) );
+				
+			}
+			
+			// 후가공 가격
+			function getAfterPrice( $order_spec ){
+				let after_price = 0 ;
+
+				// 재단				
+				if( $('#after_cutting').prop('checked')) {
+					let afterCutObj = new Cutting($("#count_case").val() , $("#quantity").val());
+					after_price += afterCutObj.get_price;
+				}
+				
+				// 코팅
+				if ($('#after_coating').prop('checked')) {
+					//let afterCoatingObj = new Coating( $order_spec,2);
+					let afterCoatingObj = new Coating2( $order_spec );
+					console.log(afterCoatingObj.get_price);
+					after_price += afterCoatingObj.get_price;
+				}
+				
+				// 오시 
+				if ($('#after_osi').prop('checked')) {
+					after_price += 4500;
+				}
+				
+				if ($('#after_mising').prop('checked')) {
+					after_price += 5000;
+				}
+				
+				if ($('#after_tomson').prop('checked')) {
+					after_price += 5000;
+				}
+				
+				if ($('#after_press').prop('checked')) {
+					after_price += 46000;
+				}
+				
+				if ($('#after_foil').prop('checked')) {
+					after_price += 43100;
+				}
+				
+				if ($('#after_punching').prop('checked')) {
+					after_price += 9200;
+				}
+				
+				if ($('#after_uvscodix').prop('checked')) {
+					after_price += 16100;
+				}
+				
+				if ($('#after_foilscodix').prop('checked')) {
+					after_price += 22100;
+				}
+				
+				if ($('#after_ramicoating').prop('checked')) {
+					after_price += 22700;
+				}
+			
+				return after_price;
+			}//getAfterPrice()
+			
+			// 종이비용
+			function fn_calc_paper( $order_spec ){
+				$data = [
+					{ 'width': 315, 'height': 465, 'basic_cnt': 2000, 'basic_amt': 124390 , 'dc_rate': 0.9 },
+					{ 'width': 315, 'height': 910, 'basic_cnt': 1000, 'basic_amt': 124390 , 'dc_rate': 0.9 },
+					{ 'width': 310, 'height': 620, 'basic_cnt': 1500, 'basic_amt': 124390 , 'dc_rate': 0.9 },
+					{ 'width': 457, 'height': 612, 'basic_cnt': 1000, 'basic_amt': 124390 , 'dc_rate': 0.9 },
+					{ 'width': 530, 'height': 750, 'basic_cnt': 1000, 'basic_amt': 179070 , 'dc_rate': 0.9 },
+				];
+				
+				var paper_price = 0;
+				for( let i=0; i < 5; i++) {
+					if( $order_spec.height < $data[i].height && $order_spec.width < $data[i].width ){
+						paper_price = $data[i].basic_amt * $data[i].dc_rate / $data[i].basic_cnt ; 
+						break;
+					}//if
+				}//for
+				// console.log( "종이가격=" + Math.round(paper_price)  );
+				return  Math.round(paper_price);
+			}
+			
+			// 인쇄 비용
+			function fn_calc_print( $order_spec ){
+
+				let print_maesu = $order_spec.quantity;
+				
+				$data = [
+					{ cnt: 0,  val: 0},
+					{ cnt: 1,  val: 1155},
+					{ cnt: 5,  val: 1040},
+					{ cnt: 10,  val: 290},
+					{ cnt: 30,  val: 290},
+					{ cnt: 100,  val: 231},
+					{ cnt: 500,  val: 185},
+					{ cnt: 1000,  val: 162},
+					{ cnt: 5000,  val: 146},
+					{ cnt: 1000000,  val: 134},
+				  ];
+
+				var addPrice = 0 ;
+				var printPrice = 0;
+			    for( let i=0; i <= print_maesu ; i++) {
+					for( let x=1; x < 10; x++) {
+						if( Number($data[x-1].cnt) < i && i <= Number($data[x].cnt)  ) {
+							addPrice = Number($data[x].val) ;
+							printPrice += addPrice;
+							break;
+						}
+					}
+		      	}
+				//console.log( "인쇄비용=" + printPrice );
+				return printPrice;			
+			}//fn_calc_print
+			
+		</script>
+	</head>
+	
+	
+	<body onload="onload_init()">
+		
+		<br>[견적 내용]
+        <ul>
+		      <li>
+		        사이즈 : <span id="esti_paper_size">&nbsp;</span>
+		      </li>
+		      <li>
+		        용지 : <span id="esti_cover_name">&nbsp;</span>
+		      </li>		      
+		      <li>
+		        인쇄 : <span id="esti_cover_color">&nbsp;</span>
+		      </li>
+		      <li>
+		        주문수량 : <span id="esti_quantity">&nbsp;</span>
+		      </li>
+		</ul>
+		<hr>
+		          <div class="row">
+		            <div class="col-48 text-right">총 결제금액</div>
+		          </div>
+		
+		          <div class="row">
+		            <div class="col-48 text-right"><span class="h2" id="fp-total" style="color:#ff5b59">0</span> 원
+		            </div>
+		          </div>
+				
+			            <div >공급가</div>
+			            <div >
+			              <span id="fp-supply" >&nbsp;0</span>원
+			            </div>
+			
+			            <div >부가세</div>
+			            <div >
+			              <span id="fp-vat" align="right">&nbsp;0</span>원
+			            </div>
+		<hr>
+		<form name="applyform" id="applyform" method="POST" action="">
+		
+          <div >
+            <input type="text" name="subject" id="subject" placeholder="제목을 입력하세요." autocomplete="off">
+          </div>		
+		    <br>
+			<!-- 종이 사이즈 -->
+		    <div name="paper_lists" id="paper_lists" >&nbsp;</div>
+            
+            <!-- 제품사이즈 -->
+            <div class="col-md-20">
+              <div class="row align-items-center">
+                <label class="col-md-12">제품사이즈</label>
+                <div class="col-md-36">
+                  <div class="form-inline">
+                    <label class="mr-1">가로</label>
+                    <input type="text" name="cutsize_w" class="eprice form-control mr-1" id="cutsize-w" style="width: 60px; background: rgb(233, 236, 239);" value="210" maxlength="3" readonly="readonly" autocomplete="off">㎜ <i class="fal fa-times mx-2"></i>
+                    <label class="mr-1">세로</label>
+                    <input type="text" name="cutsize_h" class="eprice form-control mr-1" id="cutsize-h" style="width: 60px; background: rgb(233, 236, 239);" value="297" maxlength="3" readonly="readonly" autocomplete="off">㎜
+                  </div>
+                </div>
+              </div>
+            </div>  
+            
+            <!-- 편집사이즈 -->
+            <div class="col-md-20">
+              <div class="row align-items-center">
+                <label class="col-md-12">편집사이즈</label>
+                <div class="col-md-36 form-inline">
+                  <label class="mr-1">가로</label>
+                  <input type="text" name="jobsize_w" class="form-control mr-1" id="jobsize-w" data-val="" style="width:60px" value="214" readonly="" autocomplete="off">㎜ <i class="fal fa-times mx-2"></i>
+                  <label class="mr-1">세로</label>
+                  <input type="text" name="jobsize_h" class="form-control mr-1" id="jobsize-h" data-val="" style="width:60px" value="301" readonly="" autocomplete="off">㎜
+                </div>
+              </div>
+            </div>          
+            
+        	<!-- 매수 -->
+			<div>
+              <select name="quantity" id="quantity" >
+				<th:block th:each="num : ${#numbers.sequence(1,1000)}">
+					<option th:value="${num} * 2" th:text="${num} * 2" th:selected="${num} * 2 == 2">
+			    </th:block>
+              </select>매
+            </div>
+            
+            <!-- 건수 -->
+	        <div>
+	            <select name="count_case" id="count_case">
+					<th:block th:each="num : ${#numbers.sequence(1,100)}">
+						<option th:value="${num}" th:text="${num}" th:selected="${num} == 1">
+					</th:block>
+				</select>건
+	        </div>
+		
+		
+        <!-- 용지선택 -->
+        <br>
+        <div>
+          <label>
+            [용지선택]
+          </label>
+        </div>
+        
+        <!-- cover_cates -->
+        <div name="cover_cates" id="cover_cates" >&nbsp;</div>
+		
+        <!-- cover_name -->
+        <div name="cover_names" id="cover_names" >&nbsp;</div>
+
+        <!-- paper_gram -->
+		<div id="paper_gram">
+			<select name="cover_gram" id="cover_gram" >
+				<option value="스노우 100g" data-thick="0.088" data-gram="100" data-max="750x530" data-nuvera="N" data-toner="%22%5B%5D%22" data-indigo="%22%5B%5D%22" data-dc="N" data-istoner="Y" data-isindigo="Y">100g</option>
+				<option value="스노우 120g" data-thick="0.107" data-gram="120" data-max="750x530" data-nuvera="N" data-toner="%22%5B%5D%22" data-indigo="%22%5B%5D%22" data-dc="N" data-istoner="Y" data-isindigo="Y">120g</option>
+				<option value="스노우 150g" data-thick="0.142" data-gram="150" data-max="750x530" data-nuvera="N" data-toner="%22%5B%5D%22" data-indigo="%22%5B%5D%22" data-dc="N" data-istoner="Y" data-isindigo="Y">150g</option>
+				<option value="스노우 180g" data-thick="0.179" data-gram="180" data-max="750x530" data-nuvera="N" data-toner="%22%5B%5D%22" data-indigo="%22%5B%5D%22" data-dc="N" data-istoner="Y" data-isindigo="Y">180g</option>
+				<option selected="" value="스노우 200g" data-thick="0.212" data-gram="200" data-max="750x530" data-nuvera="N" data-toner="%22%5B%5D%22" data-indigo="%22%5B%5D%22" data-dc="N" data-istoner="Y" data-isindigo="Y">200g</option>
+				<option value="스노우 250g" data-thick="0.26" data-gram="250" data-max="750x530" data-nuvera="N" data-dc="Y" data-istoner="Y" data-isindigo="Y">250g</option>
+				<option value="스노우 300g" data-thick="0.318" data-gram="300" data-max="750x530" data-nuvera="N" data-dc="Y" data-istoner="Y" data-isindigo="Y">300g</option>
+			</select>
+        </div>       
+
+        <!-- 용지선택 //-->
+        
+       
+      <!-- 인쇄선택 -->
+      
+      <br>
+      
+        <!-- 표지 인쇄방법 //-->
+        <div class="row mb-4">
+
+          <label class="col-6 form-label">
+            인쇄방법
+          </label>
+
+
+            <div >
+              <input type="radio" name="machine" value="indigo" id="machine-indigo" checked=""> 
+              <label for="machine-indigo">인디고</label>
+              
+              <input type="radio" name="machine" value="toner" id="machine-toner">
+              <label for="machine-toner">토너인쇄(고해상)</label>
+            </div>
+      
+      
+      <input type="radio" name="cover_color"  id="cover_color01" data-val="0" value="양면8도컬러" checked="true" color-val="1">      
+      <label for="cover_color01" >양면 8도컬러</label>
+
+      <input type="radio" name="cover_color" id="cover_color02" data-val="1" value="단면4도컬러" color-val="1">
+      <label for="cover_color02" >단면 4도컬러</label>
+
+      <input type="radio" name="cover_color" id="cover_color03" data-val="2" value="양면먹2도" color-val="0.5">
+      <label for="cover_color03" >양면 먹2도</label>
+
+      <input type="radio" name="cover_color" id="cover_color04" data-val="3" value="단면먹1도" color-val="0.5">
+      <label for="cover_color04" >단면 먹1도</label>         
+	  
+	  
+	    <div>
+	      별색 &nbsp;
+	      <select name="cover_add_color" id="cover_add_color" style="padding-right:0; width:106px;">
+	        <option value="" data-val="0">색상추가없음</option>
+	        <option value="단면 백색" data-val="0.5">단면 백색</option>
+	        <option value="양면 백색" data-val="1">양면 백색</option>
+	        <option value="단면 오렌지" data-val="0.5">단면 오렌지</option>
+	        <option value="양면 오렌지" data-val="1">양면 오렌지</option>
+	      </select>
+	    </div>
+	    
+	  <!-- 인쇄선택 //-->
+	  
+	   <!-- 후가공 -->
+	   <br>
+	      <div >
+            <i ></i> 후가공
+          </div>
+          
+       		 <!-- 후가공선택 -->
+		  <div >
+		    <input type="checkbox" name="after_cutting" id="after_cutting" data-target="cutting" value="cutting" checked="">
+		    <label for="is-cutting" >재단</label>
+		
+		    <input type="checkbox" name="after_coating" id="after_coating" data-target="coating" value="coating">
+		    <label for="is-coating" >코팅</label>
+		
+		    <input type="checkbox" name="after_osi" id="after_osi" data-target="osi" value="osi">
+		    <label for="is-osi"  style="opacity: 1;">오시</label>
+		
+		    <input type="checkbox" name="after_osifold" id="after_osifold" data-target="osifold" value="osifold">
+		    <label for="is-osifold"  style="opacity: 1;">오시+접지</label>
+		
+		    <input type="checkbox" name="after_folding" id="after_folding" data-target="folding" value="folding" disabled="">
+		    <label for="is-folding"  style="opacity: 0.3;">접지</label>
+		
+		    <input type="checkbox" name="after_mising" id="after_mising" data-target="mising" value="mising">
+		    <label for="is-mising" >미싱</label>
+		
+		    <input type="checkbox" name="after_tomson" id="after_tomson" data-target="tomson" value="tomson">
+		    <label for="is-tomson" >도무송</label>
+		
+		    <input type="checkbox" name="after_press" id="after_press" data-target="press" value="press">
+		    <label for="is-press" >형압</label>
+		
+		    <input type="checkbox" name="after_foil" id="after_foil" data-target="foil" value="foil">
+		    <label for="is-foil" >동판 박</label>
+		
+		    <input type="checkbox" name="after_punching" id="after_punching" data-target="punching" value="punching">
+		    <label for="is-punching" >타공</label>
+		
+		    <input type="checkbox" name="after_uvscodix" id="after_uvscodix" data-target="uvscodix" value="uvscodix">
+		    <label for="is-uvscodix" >디지털 부분UV</label>
+
+		    <input type="checkbox" name="after_foilscodix" id="after_foilscodix" data-target="foilscodix" value="foilscodix">
+		    <label for="is-foilscodix" >디지털 박</label>
+		
+		    <input type="checkbox" name="after_ramicoating" id="after_ramicoating" data-target="ramicoating" value="ramicoating">
+		    <label for="is-ramicoating">라미넥스코팅</label>
+		  </div>
+		  
+		      <!-- 사용자메모 -->
+		      <br>
+		      <div>
+		          <div >
+		            <i class="fal fa-comment-alt-lines"></i> 사용자메모
+		          </div>
+		        <div >
+		          <textarea name="custom_memo" id="custom_memo" style="width:350px; height:100px;"></textarea>
+		        </div>
+		        
+		      </div>
+		      <!-- 사용자메모 //-->		  
+
+       </form>        
+		    
+	</body>
+	
+</html>

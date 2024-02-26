@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+                        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+                   
+<mapper namespace="com.whafac.mapper.est.EstimateMapper">
+	<select id="getEstimate" parameterType="Long" resultType="Map">
+		SELECT MEMBERKEY
+		  FROM whafac.TB_EXPERT_ESTIMATE
+		 WHERE EST_IDX = #{id}
+	</select>
+
+
+   <insert id="saveEstimate" parameterType="Map">
+		INSERT INTO whafac.TB_EXPERT_ESTIMATE
+		(
+			  MEMBERKEY
+			, GROUP1
+			, GROUP2
+			, REQ_DATE
+			, REQ_TIME
+			, ESTIMATE_DETAIL
+		)
+		VALUES
+		(
+		     #{memberkey}
+		   , #{group1}
+		   , #{group2}
+		   , DATE_FORMAT(NOW(), '%Y%m%d')
+		   , NOW()
+		   , #{estdata}
+		)
+    </insert>
+</mapper>

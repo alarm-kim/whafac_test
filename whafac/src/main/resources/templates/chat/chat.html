@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>채팅</title>
+
+
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.4.0/sockjs.min.js"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+
+	<script type="text/javascript">
+	
+		var stompClient = null;
+	    function connectSocket() {	
+			var sockJs = new SockJS("/ws");
+			
+			 //1. SockJS를 내부에 들고있는 stomp를 내어줌
+			 stompClient = Stomp.over(sockJs);
+			 
+	         //2. connection이 맺어지면 실행
+	        stompClient.connect({}, function (){
+	        	console.log("STOMP Connection 확인");
+	        	$('#custom_memo').html("STOMP Connection--------------");
+	        	
+	        });
+	    }
+	    
+	    // 메시지 전송
+	    function sendMessage(){
+			//  send(path, header, message) 
+			let vMessage = $("#message").val();
+			console.log( vMessage );
+			
+			let msg = JSON.stringify({"type": '' , "sender": '' , "data": vMessage });
+			stompClient.send('/hello', {}, msg);
+			//stompClient.send('/pub/hello', {}, msg);
+			
+			$("#custom_memo").append("<br>" + msg );
+		}
+	    
+	    
+	    function subChannel(){
+	       //4. subscribe(path, callback) 
+	       let channelVal = $("#channel").val();
+	       stompClient.subscribe( '/sub/channel/' + channelVal , 'cbSubChannel()' );
+	       
+	       $("#custom_memo").append("<br>" + channelVal );
+		}
+		
+		// 
+		function cbSubChannel(e){
+			console.log( 'cbSubChannel() start' );
+			console.log( "[" + e + "]");
+		}
+		
+		function disConnect(){
+		    if (stompClient !== null) {
+				$("#custom_memo").append("<br> STOMP disConnection--------------" );
+		        stompClient.disconnect();
+		    }
+		    stompClient = null;
+		}	        
+	</script>
+</head>
+
+<body>    	
+	
+<h1>test</h1>
+	<div id="chatConnect">
+	    <button onclick="connectSocket()">시작하기</button>
+	</div>
+	
+    <input id="message"/>
+    <button id="sendBtn" onclick="sendMessage()">send</button>
+    
+    <br><br>
+	<input id="channel">
+    <button id="subscribeBtn" onclick="subChannel()">구독</button>
+    
+    <br><br>
+    <button id="disConnectBtn" onclick="disConnect()">연결 끊기</button> 
+    
+   	<br><br>
+    <div>
+      <textarea name="custom_memo" id="custom_memo" style="width:350px; height:100px;"></textarea>
+    </div>   	
+	   
+</body>
+</html>

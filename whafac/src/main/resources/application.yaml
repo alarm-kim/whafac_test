@@ -1,0 +1,41 @@
+## 서버포트
+server:
+  port: 9080
+
+## db 연결 프로퍼티
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://211.42.158.123:3306/estimate
+    username: root
+    password: whafac*2022
+    
+  thymeleaf:
+    cache: false
+    check-template: true
+    check-template-location: true
+    mode: HTML
+    prefix: classpath:templates/
+    suffix: .html
+
+
+    
+# resources/static/mapper/ 에 있는 모든 xml 파일
+mybatis:
+  mapper-locations: static/mapper/*.xml
+  type-aliases-package: com.whafac.mapper
+
+# 로그파일 위치 
+logging:
+  file:
+    path: E:\whafac\whafac_workspace\log
+    
+# 로깅 설정
+  level:
+    root: info
+    '[com.whafac.controller]': debug
+    '[com.whafac.service]': info
+
+
+    
+    

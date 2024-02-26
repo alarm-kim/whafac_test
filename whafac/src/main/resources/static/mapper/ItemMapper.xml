@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+                        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+                   
+<mapper namespace="com.whafac.mapper.item.ItemMapper">
+	<select id="getItems" resultType="Map">
+		SELECT 
+		       ITEM_NO
+			 , ITEM_NAME
+		     , ITEM_PRICE
+		  FROM ESTIMATE.TBL_ITEM
+	</select>
+
+
+   <insert id="saveItem" parameterType="Map">
+		INSERT INTO ESTIMATE.TBL_ITEM
+		(
+		    ITEM_NAME 
+		  , ITEM_PRICE
+		)
+		VALUES
+		(
+		     #{item_name}
+		   , #{item_price}
+		)
+    </insert>
+    
+    <!-- 해당번호의 아이템 조회 -->
+    <select id="findByNo" resultType="Map">
+		SELECT 
+		       ITEM_NO
+			 , ITEM_NAME
+		     , ITEM_PRICE
+		  FROM ESTIMATE.TBL_ITEM
+		 WHERE ITEM_NO = #{item_no}
+	</select>
+	
+	<!-- 해당번호로 아이템 수정 -->
+    <update id="updateByNo" parameterType="Map">
+		UPDATE ESTIMATE.TBL_ITEM
+		   SET ITEM_NAME  = #{item_name}
+			 , ITEM_PRICE = #{item_price}
+		 WHERE ITEM_NO    = #{item_no}
+	</update>
+</mapper>
